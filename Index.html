@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All In One Video Downloader</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --background: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 550px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        p.subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            background: #0f172a;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="url"]:focus {
+            border-color: var(--primary-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* Loader Style */
+        .loader {
+            display: none;
+            margin: 20px auto;
+            border: 4px solid #334155;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Result Section */
+        .result-box {
+            display: none;
+            margin-top: 25px;
+            border-top: 1px solid #334155;
+            padding-top: 20px;
+            text-align: left;
+        }
+
+        .thumbnail {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            object-fit: cover;
+            max-height: 280px;
+            background: #0f172a;
+        }
+
+        .video-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            color: #fff;
+        }
+
+        .download-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .dl-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #334155;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: background 0.3s;
+        }
+
+        .dl-btn:hover {
+            background: var(--success-color);
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .error-msg {
+            display: none;
+            color: #ef4444;
+            margin-top: 15px;
+            font-size: 0.95rem;
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Video Downloader</h1>
+        <p class="subtitle">Download videos from TikTok & various platforms instantly</p>
+
+        <div class="input-group">
+            <input type="url" id="videoUrl" placeholder="Paste video link here..." required>
+            <button id="downloadBtn" onclick="fetchVideoData()">Fetch Download Links</button>
+        </div>
+
+        <div class="loader" id="loader"></div>
+        <div class="error-msg" id="errorMsg">Something went wrong. Please check the URL and try again.</div>
+
+        <div class="result-box" id="resultBox">
+            <img src="" alt="Thumbnail" class="thumbnail" id="videoThumb">
+            <div class="video-title" id="videoTitle">Video Title Here</div>
+            
+            <div class="download-links" id="downloadLinks">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchVideoData() {
+            const videoUrl = document.getElementById('videoUrl').value.trim();
+            const downloadBtn = document.getElementById('downloadBtn');
+            const loader = document.getElementById('loader');
+            const resultBox = document.getElementById('resultBox');
+            const errorMsg = document.getElementById('errorMsg');
+            const downloadLinksContainer = document.getElementById('downloadLinks');
+
+            if (!videoUrl) {
+                alert('Please paste a valid video URL');
+                return;
+            }
+
+            // UI Reset
+            loader.style.display = 'block';
+            resultBox.style.display = 'none';
+            errorMsg.style.display = 'none';
+            downloadBtn.disabled = true;
+            downloadLinksContainer.innerHTML = '';
+
+            // API Configuration
+            const apiUrl = 'https://social-download-all-in-one.p.rapidapi.com/v1/social/autolink';
+            const apiKey = '29f8c3b79amshc7b9755d426320dp1b94fajsn62b1821d47db';
+            const apiHost = 'social-download-all-in-one.p.rapidapi.com';
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-rapidapi-key': apiKey,
+                        'x-rapidapi-host': apiHost
+                    },
+                    body: JSON.stringify({ url: videoUrl })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data && !data.error) {
+                    // Populate Thumbnail and Title
+                    document.getElementById('videoThumb').src = data.thumbnail || 'https://via.placeholder.com/400x250?text=No+Thumbnail';
+                    document.getElementById('videoTitle').innerText = data.title || 'Social Media Video';
+
+                    // Process Media Links
+                    if (data.medias && data.medias.length > 0) {
+                        data.medias.forEach(media => {
+                            const btn = document.createElement('a');
+                            btn.href = media.url;
+                            btn.target = '_blank';
+                            btn.className = 'dl-btn';
+                            
+                            // Human-readable format name
+                            let qualityName = media.quality ? media.quality.replace(/_/g, ' ') : 'Download';
+                            let ext = media.extension ? media.extension.toUpperCase() : 'MP4';
+
+                            btn.innerHTML = `
+                                <span>Download ${qualityName}</span>
+                                <span class="badge">${ext}</span>
+                            `;
+                            downloadLinksContainer.appendChild(btn);
+                        });
+                        
+                        // Show Result Box
+                        resultBox.style.display = 'block';
+                    } else {
+                        throw new Error('No media links found');
+                    }
+                } else {
+                    throw new Error('API Error or Invalid Response');
+                }
+
+            } catch (error) {
+                console.error(error);
+                errorMsg.style.display = 'block';
+            } finally {
+                loader.style.display = 'none';
+                downloadBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
